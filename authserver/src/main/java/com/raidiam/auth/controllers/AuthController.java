@@ -23,8 +23,8 @@ public class AuthController {
     }
 
     @RequestMapping("/.well-known/openid-configuration")
-    public Map<String, Object> discovery() {
-        return authService.discovery();
+    public ResponseEntity<?> discovery() {
+        return ResponseEntity.ok(authService.discovery());
     }
 
     @RequestMapping(method = RequestMethod.POST, path = "/token", produces = "application/json", consumes = {"application/x-www-form-urlencoded", "application/x-www-form-urlencoded;charset=UTF-8"})
