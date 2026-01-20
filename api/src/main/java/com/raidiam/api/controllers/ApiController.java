@@ -23,7 +23,7 @@ public class ApiController {
     }
 
     @GetMapping(value = "/api/now", produces = "application/json")
-    public Map<String, String> now(@RequestHeader("Authorization") String authHeader) {
+    public Map<String, String> now(@RequestHeader(value = "Authorization", required = false) String authHeader) {
         AuthResult auth = authService.authorize(authHeader, "time");
         if (!auth.isSuccess()) {
             throw new ResponseStatusException(auth.errorStatus());
@@ -35,7 +35,7 @@ public class ApiController {
     }
 
     @GetMapping(value = "/api/random", produces = "application/json")
-    public Map<String, String> random(@RequestHeader("Authorization") String authHeader) {
+    public Map<String, String> random(@RequestHeader(value = "Authorization", required = false) String authHeader) {
         AuthResult auth = authService.authorize(authHeader, "random");
         if (!auth.isSuccess()) {
             throw new ResponseStatusException(auth.errorStatus());

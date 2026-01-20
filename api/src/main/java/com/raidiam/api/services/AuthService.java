@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 import com.raidiam.api.oauth.model.AuthResult;
 import com.raidiam.api.oauth.model.IntrospectionResponse;
@@ -15,10 +16,15 @@ import com.raidiam.api.oauth.model.IntrospectionResponse;
 @Service
 public class AuthService {
 
-    @Value("${oauth.introspection.uri}")
-    private String introspectionUri;
+    private final String introspectionUri;
+    private final RestClient restClient;
 
-    private final RestClient restClient = RestClient.create();
+    public AuthService(
+            RestClient.Builder restClientBuilder,
+            @Value("${oauth.introspection.uri}") String introspectionUri) {
+        this.restClient = restClientBuilder.build();
+        this.introspectionUri = introspectionUri;
+    }
 
     public AuthResult authorize(String authorization, String requiredScope) {
         Optional<String> token = extractBearerToken(authorization);
@@ -26,13 +32,13 @@ public class AuthService {
             return AuthResult.unauthorized();
         }
 
-        IntrospectionResponse introspection = introspect(token.get());
+        Optional<IntrospectionResponse> introspection = introspect(token.get());
 
-        if (introspection == null || !introspection.isActive()) {
+        if (introspection.isEmpty() || !introspection.get().isActive()) {
             return AuthResult.unauthorized();
         }
 
-        if (!introspection.hasScope(requiredScope)) {
+        if (!introspection.get().hasScope(requiredScope)) {
             return AuthResult.forbidden();
         }
 
@@ -44,21 +50,27 @@ public class AuthService {
             return Optional.empty();
         }
         String[] parts = authorization.split(" ");
-        if (parts.length != 2 || !parts[0].equals("Bearer")) {
+        if (parts.length != 2 || !parts[0].equalsIgnoreCase("Bearer")) {
             return Optional.empty();
         }
         return Optional.of(parts[1]);
     }
 
-    private IntrospectionResponse introspect(String token) {
+    private Optional<IntrospectionResponse> introspect(String token) {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("token", token);
 
-        return restClient.post()
-                .uri(introspectionUri)
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(formData)
-                .retrieve()
-                .body(IntrospectionResponse.class);
+        try {
+            IntrospectionResponse response = restClient.post()
+                    .uri(introspectionUri)
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .body(formData)
+                    .retrieve()
+                    .body(IntrospectionResponse.class);
+
+            return Optional.ofNullable(response);
+        } catch (RestClientException e) {
+            return Optional.empty();
+        }
     }
 }
