@@ -1,50 +1,9 @@
-# Simple API
+## Solution
+This implementation does not use existing libraries like Spring Security. Instead I chose to roll my own solution for learning purposes.
 
-Inside the *api* folder is a simple Spring Boot API which exposes two endpoints
+The securing of the endpoints is achieved by calling a method named `authenticate` in the controller before each action. This method then calls the introspect endpoint as set in the application properties and then checking if this token is active and has the appropriate scopes.
 
-```
-/api/now
-/api/random
-```
-
-The /api/now endpoint returns a JSON object with the current time in. The /api/random endpoint
-returns a JSON object with a random number in it.
-
-These APIs can be accessed without any authorization. If you run the ApiApplication class in your IDE, you may use 
-curl or a similar tool to access these endpoints
-
-```shell
-curl http://localhost:8080/api/now
-curl http://localhost:8080/api/random
-```
-
-Your task is to protect these endpoints using OAuth2. Provided is a very simple authorisation server which you can run 
-by simply executing
-
-```shell
-docker compose up
-```
-
-## The included auth server
-
-This is a heavily stripped down implementation of OAuth2 which only covers absolutely bare essentials for use in this
-task. You can check out the discovery document at http://localhost:8081/.well-known/openid-configuration
-
-Additionally, it is configured with a single oauth client, with the following details
-
-```shell
-client_id: client1
-client secret: abcde12345
-```
-
-You will see from the discovery document that token introspection is available. For the sake of simplicity, this endpoint
-is unprotected. That is, you will not need to authenticate calls to it. The auth server will **only** issue opaque tokens,
-there is no support for JWT tokens. Bear this in mind when creating your solution.
-
-It should not be necessary at all to modify the auth server code to complete this task. However, if you feel there *is*
-a need to modify it, explain why you felt it necessary, and be prepared to be questioned on this.
-
-## How to solve
-
-You may implement the solution however you wish. You can utilise existing libraries, Spring Security etc. for this.
-You may roll your own solution by hand, either within the API application code, or some other way if you prefer.
+## Possible problems and improvements
+1. A request to introspect is made on each api hit, which could cause many issues for both the authorisation server and the resourse server. Caching the token details from introspection could mitigate this.
+2. Requests to introspect are made without authentication, since there isn't any, but that would probably not be true in a real world scenario.
+3. .well-known/openid-configuration provides all the information needed, it could be used to set up all configuration dyamically instead of having it inside the application properties.
